@@ -40,7 +40,7 @@ try {
 }
 
 // ── Auth ─────────────────────────────────────────────────────
-const Auth = {
+window.Auth = {
   login:    (body) => apiFetch('/auth/login',    { method: 'POST', body }),
   register: (body) => apiFetch('/auth/register', { method: 'POST', body }),
   getMe:    ()     => apiFetch('/auth/me')
