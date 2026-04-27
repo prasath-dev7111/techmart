@@ -4,9 +4,9 @@
 // ============================================================
 
 const BASE_URL =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  window.location.hostname === "localhost"
     ? "http://localhost:5000/api"
-    : "https://techmart-backend-api.onrender.com";
+    : "https://techmart-backend.onrender.com/api";
 
 // ── Core fetch wrapper ───────────────────────────────────────
 async function apiFetch(endpoint, options = {}) {
