@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — Products</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/sidebar.css"/>
+  <style>
+    .product-img { width: 44px; height: 44px; border-radius:8px; object-fit:cover; background:var(--bg-elevated); }
+    .product-img-placeholder { width:44px;height:44px;border-radius:8px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;color:var(--text-muted); }
+    .filter-bar { display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
+    .form-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="main-content">
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Products</h1>
+          <p class="subtitle">Manage your product catalogue</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" onclick="importProducts()">
+            <i class="ri-download-cloud-line"></i> Import from API
+          </button>
+          <button class="btn btn-primary" onclick="openAddModal()">
+            <i class="ri-add-line"></i> Add Product
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper">
+        <div class="table-toolbar">
+          <div class="search-bar">
+            <i class="ri-search-line"></i>
+            <input type="text" id="search" placeholder="Search products..." oninput="debounceSearch()"/>
+          </div>
+          <div class="filter-bar">
+            <select class="form-control" id="filter-category" onchange="loadProducts()" style="width:180px">
+              <option value="">All Categories</option>
+            </select>
+            <select class="form-control" id="filter-stock" onchange="loadProducts()" style="width:150px">
+              <option value="">All Stock</option>
+              <option value="low">Low Stock</option>
+              <option value="out">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="products-body">
+            <tr><td colspan="6"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+
+        <div class="pagination">
+          <span id="page-info">Showing 0 products</span>
+          <div class="pagination-btns" id="page-btns"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Product</h3>
+      <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="form-group">
+        <label class="form-label">Product Name *</label>
+        <input type="text" id="p-name" class="form-control" placeholder="e.g. iPhone 15 Pro"/>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Price (₹) *</label>
+          <input type="number" id="p-price" class="form-control" placeholder="0.00" min="0"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock Qty *</label>
+          <input type="number" id="p-stock" class="form-control" placeholder="0" min="0"/>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Category *</label>
+          <select id="p-category" class="form-control">
+            <option value="">Select category</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">SKU</label>
+          <input type="text" id="p-sku" class="form-control" placeholder="e.g. TM-IPH-001"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Image URL</label>
+        <input type="text" id="p-image" class="form-control" placeholder="https://..."/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="p-desc" class="form-control" placeholder="Product description..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Low Stock Alert Threshold</label>
+        <input type="number" id="p-lowstock" class="form-control" placeholder="10" value="10" min="1"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()" id="save-btn">
+        <i class="ri-save-line"></i> Save Product
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+  <script>
+    if (!requireAdmin()) { throw new Error("not admin"); }
+    populateUserBadge();
+    markActiveNav();
+  </script>
+<script src="../js/sidebar.js"></script>
+<script>
+  initPage('Products');
+
+  let currentPage = 1;
+  let searchTimer;
+
+  async function loadCategories() {
+    try {
+      const { data } = await Categories.getAll();
+      const opts = data.map(c => `<option value="${c._id}">${c.name}</option>`).join('');
+      document.getElementById('filter-category').innerHTML += opts;
+      document.getElementById('p-category').innerHTML = '<option value="">Select category</option>' + opts;
+    } catch {}
+  }
+
+  async function loadProducts(page = 1) {
+    currentPage = page;
+    const search   = document.getElementById('search').value.trim();
+    const category = document.getElementById('filter-category').value;
+    const stock    = document.getElementById('filter-stock').value;
+
+    const params = new URLSearchParams({ page, limit: 15 });
+    if (search)   params.set('search', search);
+    if (category) params.set('category', category);
+    if (stock)    params.set('stockStatus', stock);
+
+    document.getElementById('products-body').innerHTML = `<tr><td colspan="6"><div class="spinner"></div></td></tr>`;
+
+    try {
+      const { data, total } = await Products.getAll(params.toString());
+
+      document.getElementById('page-info').textContent = `Showing ${data.length} of ${total} products`;
+
+      if (!data.length) {
+        document.getElementById('products-body').innerHTML = `
+          <tr><td colspan="6">
+            <div class="empty-state"><i class="ri-box-3-line"></i><p>No products found</p></div>
+          </td></tr>`;
+        return;
+      }
+
+      document.getElementById('products-body').innerHTML = data.map(p => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:12px">
+              ${p.image
+                ? `<img src="${p.image}" class="product-img" onerror="this.style.display='none'">`
+                : `<div class="product-img-placeholder"><i class="ri-image-line"></i></div>`}
+              <div>
+                <div style="font-weight:500;color:var(--text-primary)">${p.name}</div>
+                <div style="font-size:.75rem;color:var(--text-muted)">${p.sku || 'No SKU'}</div>
+              </div>
+            </div>
+          </td>
+          <td>${p.category?.name || '—'}</td>
+          <td class="primary">${formatCurrency(p.price)}</td>
+          <td>${p.stock}</td>
+          <td>${statusBadge(p.stockStatus)}</td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${p._id}')" title="Edit">
+                <i class="ri-edit-line"></i>
+              </button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="deleteProduct('${p._id}')" title="Delete">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </td>
+        </tr>`).join('');
+
+      // Pagination
+      const totalPages = Math.ceil(total / 15);
+      let btns = '';
+      for (let i = 1; i <= totalPages; i++) {
+        btns += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="loadProducts(${i})">${i}</button>`;
+      }
+      document.getElementById('page-btns').innerHTML = btns;
+
+    } catch (err) {
+      showToast('Failed to load products: ' + err.message, 'error');
+    }
+  }
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadProducts(1), 400);
+  }
+
+  function openAddModal() {
+    document.getElementById('modal-title').textContent = 'Add Product';
+    document.getElementById('edit-id').value = '';
+    ['p-name','p-price','p-stock','p-sku','p-image','p-desc'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('p-lowstock').value = '10';
+    document.getElementById('p-category').value = '';
+    document.getElementById('product-modal').classList.add('open');
+  }
+
+  async function openEditModal(id) {
+    try {
+      const { data: p } = await Products.getOne(id);
+      document.getElementById('modal-title').textContent = 'Edit Product';
+      document.getElementById('edit-id').value = p._id;
+      document.getElementById('p-name').value = p.name;
+      document.getElementById('p-price').value = p.price;
+      document.getElementById('p-stock').value = p.stock;
+      document.getElementById('p-sku').value = p.sku || '';
+      document.getElementById('p-image').value = p.image || '';
+      document.getElementById('p-desc').value = p.description || '';
+      document.getElementById('p-lowstock').value = p.lowStockAlert;
+      document.getElementById('p-category').value = p.category?._id || '';
+      document.getElementById('product-modal').classList.add('open');
+    } catch (err) { showToast('Failed to load product', 'error'); }
+  }
+
+  function closeModal() {
+    document.getElementById('product-modal').classList.remove('open');
+  }
+
+  async function saveProduct() {
+    const id = document.getElementById('edit-id').value;
+    const body = {
+      name:          document.getElementById('p-name').value.trim(),
+      price:         parseFloat(document.getElementById('p-price').value),
+      stock:         parseInt(document.getElementById('p-stock').value),
+      category:      document.getElementById('p-category').value,
+      sku:           document.getElementById('p-sku').value.trim(),
+      image:         document.getElementById('p-image').value.trim(),
+      description:   document.getElementById('p-desc').value.trim(),
+      lowStockAlert: parseInt(document.getElementById('p-lowstock').value)
+    };
+
+    if (!body.name || !body.price || !body.category) {
+      showToast('Please fill Name, Price, and Category', 'error'); return;
+    }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    try {
+      if (id) { await Products.update(id, body); showToast('Product updated!', 'success'); }
+      else    { await Products.create(body);     showToast('Product created!', 'success'); }
+      closeModal();
+      loadProducts(currentPage);
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { btn.disabled = false; }
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm('Remove this product?')) return;
+    try {
+      await Products.delete(id);
+      showToast('Product removed', 'success');
+      loadProducts(currentPage);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function importProducts() {
+    if (!confirm('Import products from FakeStore API? This may take a moment.')) return;
+    showToast('Importing from external API...', 'info');
+    try {
+      const res = await Products.importExternal();
+      showToast(res.message, 'success');
+      loadProducts(1);
+    } catch (err) { showToast('Import failed: ' + err.message, 'error'); }
+  }
+
+  loadCategories();
+  loadProducts();
+</script>
+</body>
+</html>

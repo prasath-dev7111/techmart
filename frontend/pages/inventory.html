@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — Inventory</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/sidebar.css"/>
+  <style>
+    .stock-bar-wrap { width:100px; }
+    .stock-bar { height:6px; background:var(--bg-elevated); border-radius:3px; overflow:hidden; }
+    .stock-bar-fill { height:100%; border-radius:3px; transition:width .4s; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="main-content">
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Inventory</h1>
+          <p class="subtitle">Monitor and adjust stock levels across all products</p>
+        </div>
+        <div class="header-actions">
+          <select class="form-control" id="stock-filter" onchange="loadInventory()" style="width:160px">
+            <option value="">All Products</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid-3" id="inv-summary" style="margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="ri-checkbox-circle-line"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="s-instock">—</div>
+            <div class="stat-label">In Stock</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow"><i class="ri-alert-line"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="s-low">—</div>
+            <div class="stat-label">Low Stock</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--danger-bg);color:var(--danger)"><i class="ri-close-circle-line"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="s-out">—</div>
+            <div class="stat-label">Out of Stock</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-toolbar">
+          <div class="search-bar">
+            <i class="ri-search-line"></i>
+            <input type="text" id="search" placeholder="Search products..." oninput="debounceSearch()"/>
+          </div>
+          <span id="inv-count" style="font-size:.875rem;color:var(--text-secondary)"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Current Stock</th>
+              <th>Stock Level</th>
+              <th>Alert At</th>
+              <th>Status</th>
+              <th>Adjust Stock</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-body">
+            <tr><td colspan="7"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stock Adjust Modal -->
+<div class="modal-overlay" id="stock-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Adjust Stock</h3>
+      <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="stock-product-name" style="font-weight:600;margin-bottom:16px;color:var(--text-primary)"></p>
+      <div class="form-group">
+        <label class="form-label">New Stock Quantity</label>
+        <input type="number" id="new-stock" class="form-control" min="0" placeholder="Enter new quantity"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStock()">
+        <i class="ri-save-line"></i> Update Stock
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+  <script>
+    if (!requireAdmin()) { throw new Error("not admin"); }
+    populateUserBadge();
+    markActiveNav();
+  </script>
+<script src="../js/sidebar.js"></script>
+<script>
+  initPage('Inventory');
+
+  let editProductId = null;
+  let searchTimer;
+  let allProducts = [];
+
+  async function loadInventory() {
+    const stockFilter = document.getElementById('stock-filter').value;
+    const search      = document.getElementById('search').value.trim();
+    const params = new URLSearchParams({ limit: 100 });
+    if (stockFilter) params.set('stockStatus', stockFilter);
+    if (search)      params.set('search', search);
+
+    document.getElementById('inventory-body').innerHTML = `<tr><td colspan="7"><div class="spinner"></div></td></tr>`;
+
+    try {
+      const { data, total } = await Products.getAll(params.toString());
+      allProducts = data;
+      document.getElementById('inv-count').textContent = `${total} products`;
+
+      // Summary
+      const inStock = data.filter(p => p.stock > p.lowStockAlert).length;
+      const lowStock = data.filter(p => p.stock > 0 && p.stock <= p.lowStockAlert).length;
+      const outStock = data.filter(p => p.stock === 0).length;
+      document.getElementById('s-instock').textContent = inStock;
+      document.getElementById('s-low').textContent = lowStock;
+      document.getElementById('s-out').textContent = outStock;
+
+      if (!data.length) {
+        document.getElementById('inventory-body').innerHTML = `
+          <tr><td colspan="7"><div class="empty-state"><i class="ri-stack-line"></i><p>No products found</p></div></td></tr>`;
+        return;
+      }
+
+      document.getElementById('inventory-body').innerHTML = data.map(p => {
+        const pct   = Math.min(100, (p.stock / Math.max(p.stock, 100)) * 100);
+        const color = p.stock === 0 ? 'var(--danger)' : p.stock <= p.lowStockAlert ? 'var(--warning)' : 'var(--success)';
+        return `
+          <tr>
+            <td class="primary">${p.name}</td>
+            <td>${p.category?.name || '—'}</td>
+            <td style="font-weight:700;font-family:'Syne',sans-serif;font-size:1.1rem">${p.stock}</td>
+            <td>
+              <div class="stock-bar-wrap">
+                <div class="stock-bar">
+                  <div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted)">${p.lowStockAlert}</td>
+            <td>${statusBadge(p.stockStatus)}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="openStockModal('${p._id}','${p.name.replace(/'/g,"\\'")}',${p.stock})">
+                <i class="ri-edit-line"></i> Adjust
+              </button>
+            </td>
+          </tr>`;
+      }).join('');
+
+    } catch (err) { showToast('Failed to load inventory', 'error'); }
+  }
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadInventory, 400);
+  }
+
+  function openStockModal(id, name, stock) {
+    editProductId = id;
+    document.getElementById('stock-product-name').textContent = name;
+    document.getElementById('new-stock').value = stock;
+    document.getElementById('stock-modal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('stock-modal').classList.remove('open'); }
+
+  async function saveStock() {
+    const newStock = parseInt(document.getElementById('new-stock').value);
+    if (isNaN(newStock) || newStock < 0) { showToast('Enter a valid stock quantity', 'error'); return; }
+
+    try {
+      await Products.updateStock(editProductId, newStock);
+      showToast('Stock updated successfully!', 'success');
+      closeModal();
+      loadInventory();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  loadInventory();
+</script>
+</body>
+</html>

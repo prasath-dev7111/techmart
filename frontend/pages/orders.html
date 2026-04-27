@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — Orders</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/sidebar.css"/>
+  <style>
+    .status-pipeline {
+      display:flex; gap:0; margin: 20px 0;
+    }
+    .pipeline-step {
+      flex:1; text-align:center; padding:10px 8px;
+      background:var(--bg-elevated); border:1px solid var(--border);
+      font-size:.75rem; font-weight:600; color:var(--text-muted);
+      cursor:pointer; transition:all .2s; position:relative;
+    }
+    .pipeline-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .pipeline-step:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+    .pipeline-step.active {
+      background:var(--accent-glow); color:var(--accent-light);
+      border-color:var(--border-accent);
+    }
+    .pipeline-step i { display:block; font-size:1.1rem; margin-bottom:4px; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .detail-section { background:var(--bg-elevated); border-radius:var(--radius); padding:16px; }
+    .detail-section h4 { font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:12px; }
+    .detail-row { display:flex; justify-content:space-between; font-size:.875rem; margin-bottom:8px; }
+    .detail-row span:first-child { color:var(--text-secondary); }
+    .detail-row span:last-child { font-weight:500; }
+    .order-item-row { display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border); }
+    .order-item-row:last-child { border-bottom:none; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="main-content">
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Orders</h1>
+          <p class="subtitle">Track and manage all customer orders</p>
+        </div>
+      </div>
+
+      <!-- Status Pipeline Filter -->
+      <div class="status-pipeline">
+        <div class="pipeline-step active" onclick="filterStatus('')" id="filter-all">
+          <i class="ri-list-check"></i> All
+        </div>
+        <div class="pipeline-step" onclick="filterStatus('Placed')" id="filter-placed">
+          <i class="ri-shopping-cart-line"></i> Placed
+        </div>
+        <div class="pipeline-step" onclick="filterStatus('Processing')" id="filter-processing">
+          <i class="ri-settings-3-line"></i> Processing
+        </div>
+        <div class="pipeline-step" onclick="filterStatus('Shipped')" id="filter-shipped">
+          <i class="ri-truck-line"></i> Shipped
+        </div>
+        <div class="pipeline-step" onclick="filterStatus('Delivered')" id="filter-delivered">
+          <i class="ri-checkbox-circle-line"></i> Delivered
+        </div>
+        <div class="pipeline-step" onclick="filterStatus('Cancelled')" id="filter-cancelled">
+          <i class="ri-close-circle-line"></i> Cancelled
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper">
+        <div class="table-toolbar">
+          <div class="search-bar">
+            <i class="ri-search-line"></i>
+            <input type="text" id="search" placeholder="Search orders..."/>
+          </div>
+          <span id="order-count" style="font-size:.875rem;color:var(--text-secondary)"></span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body">
+            <tr><td colspan="8"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+
+        <div class="pagination">
+          <span id="page-info"></span>
+          <div class="pagination-btns" id="page-btns"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3 id="order-modal-title">Order Details</h3>
+      <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body" id="order-modal-body">
+      <div class="spinner"></div>
+    </div>
+    <div class="modal-footer" id="order-modal-footer"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+  <script>
+    if (!requireAdmin()) { throw new Error("not admin"); }
+    populateUserBadge();
+    markActiveNav();
+  </script>
+<script src="../js/sidebar.js"></script>
+<script>
+  initPage('Orders');
+
+  let activeStatus = '';
+  let currentPage = 1;
+
+  function filterStatus(status) {
+    activeStatus = status;
+    document.querySelectorAll('.pipeline-step').forEach(el => el.classList.remove('active'));
+    const key = status ? `filter-${status.toLowerCase()}` : 'filter-all';
+    document.getElementById(key)?.classList.add('active');
+    loadOrders(1);
+  }
+
+  async function loadOrders(page = 1) {
+    currentPage = page;
+    const params = new URLSearchParams({ page, limit: 15 });
+    if (activeStatus) params.set('status', activeStatus);
+
+    document.getElementById('orders-body').innerHTML = `<tr><td colspan="8"><div class="spinner"></div></td></tr>`;
+
+    try {
+      const { data, total } = await Orders.getAll(params.toString());
+      document.getElementById('order-count').textContent = `${total} orders`;
+      document.getElementById('page-info').textContent = `Showing ${data.length} of ${total}`;
+
+      if (!data.length) {
+        document.getElementById('orders-body').innerHTML = `
+          <tr><td colspan="8"><div class="empty-state">
+            <i class="ri-shopping-bag-line"></i><p>No orders found</p>
+          </div></td></tr>`;
+        return;
+      }
+
+      document.getElementById('orders-body').innerHTML = data.map(o => `
+        <tr>
+          <td class="primary">${o.orderNumber}</td>
+          <td>${o.customer?.name || '—'}<br><span style="font-size:.75rem;color:var(--text-muted)">${o.customer?.email || ''}</span></td>
+          <td>${o.items?.length || 0} item(s)</td>
+          <td class="primary">${formatCurrency(o.totalAmount)}</td>
+          <td>${statusBadge(o.paymentStatus)}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="white-space:nowrap">${formatDate(o.createdAt)}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="viewOrder('${o._id}')">
+              <i class="ri-eye-line"></i> View
+            </button>
+          </td>
+        </tr>`).join('');
+
+      const totalPages = Math.ceil(total / 15);
+      let btns = '';
+      for (let i = 1; i <= totalPages; i++) {
+        btns += `<button class="page-btn ${i===page?'active':''}" onclick="loadOrders(${i})">${i}</button>`;
+      }
+      document.getElementById('page-btns').innerHTML = btns;
+
+    } catch (err) { showToast('Failed to load orders: ' + err.message, 'error'); }
+  }
+
+  async function viewOrder(id) {
+    document.getElementById('order-modal').classList.add('open');
+    document.getElementById('order-modal-body').innerHTML = '<div class="spinner"></div>';
+    document.getElementById('order-modal-footer').innerHTML = '';
+
+    try {
+      const { data: o } = await Orders.getOne(id);
+
+      document.getElementById('order-modal-title').textContent = `Order — ${o.orderNumber}`;
+
+      document.getElementById('order-modal-body').innerHTML = `
+        <div class="detail-grid" style="margin-bottom:16px">
+          <div class="detail-section">
+            <h4>Customer</h4>
+            <div class="detail-row"><span>Name</span><span>${o.customer?.name}</span></div>
+            <div class="detail-row"><span>Email</span><span>${o.customer?.email}</span></div>
+            <div class="detail-row"><span>Phone</span><span>${o.customer?.phone || '—'}</span></div>
+          </div>
+          <div class="detail-section">
+            <h4>Payment & Status</h4>
+            <div class="detail-row"><span>Method</span><span>${o.paymentMethod}</span></div>
+            <div class="detail-row"><span>Payment</span><span>${statusBadge(o.paymentStatus)}</span></div>
+            <div class="detail-row"><span>Status</span><span>${statusBadge(o.status)}</span></div>
+            <div class="detail-row"><span>Tracking</span><span>${o.trackingNumber || '—'}</span></div>
+          </div>
+        </div>
+
+        <div class="detail-section" style="margin-bottom:16px">
+          <h4>Order Items</h4>
+          ${o.items.map(item => `
+            <div class="order-item-row">
+              <div style="flex:1">
+                <div style="font-weight:500">${item.name}</div>
+                <div style="font-size:.75rem;color:var(--text-muted)">Qty: ${item.quantity} × ${formatCurrency(item.price)}</div>
+              </div>
+              <div style="font-weight:600">${formatCurrency(item.price * item.quantity)}</div>
+            </div>`).join('')}
+          <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div>
+              <div style="font-size:.8rem;color:var(--text-muted)">Subtotal: ${formatCurrency(o.subtotal)}</div>
+              <div style="font-size:.8rem;color:var(--text-muted)">GST (18%): ${formatCurrency(o.tax)}</div>
+              <div style="font-size:.8rem;color:var(--text-muted)">Shipping: ${formatCurrency(o.shippingCharge)}</div>
+            </div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700">
+              ${formatCurrency(o.totalAmount)}
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Update Status</h4>
+            <div class="form-group" style="margin-bottom:10px">
+              <select class="form-control" id="new-status">
+                ${['Placed','Processing','Shipped','Delivered','Cancelled'].map(s =>
+                  `<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <input type="text" class="form-control" id="tracking-no" placeholder="Tracking number (optional)" value="${o.trackingNumber||''}"/>
+          </div>
+          <div class="detail-section">
+            <h4>Update Payment</h4>
+            <select class="form-control" id="new-payment">
+              ${['Pending','Paid','Failed','Refunded'].map(s =>
+                `<option value="${s}" ${o.paymentStatus===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('order-modal-footer').innerHTML = `
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn btn-success" onclick="updatePayment('${o._id}')">
+          <i class="ri-bank-card-line"></i> Update Payment
+        </button>
+        <button class="btn btn-primary" onclick="updateStatus('${o._id}')">
+          <i class="ri-refresh-line"></i> Update Status
+        </button>
+      `;
+
+    } catch (err) { showToast('Failed to load order', 'error'); }
+  }
+
+  async function updateStatus(id) {
+    const status = document.getElementById('new-status').value;
+    const trackingNumber = document.getElementById('tracking-no').value;
+    try {
+      await Orders.updateStatus(id, { status, trackingNumber });
+      showToast(`Status updated to ${status}`, 'success');
+      closeModal();
+      loadOrders(currentPage);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function updatePayment(id) {
+    const paymentStatus = document.getElementById('new-payment').value;
+    try {
+      await Orders.updatePayment(id, { paymentStatus });
+      showToast(`Payment updated to ${paymentStatus}`, 'success');
+      closeModal();
+      loadOrders(currentPage);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  function closeModal() {
+    document.getElementById('order-modal').classList.remove('open');
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

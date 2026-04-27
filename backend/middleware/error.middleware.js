@@ -1,0 +1,37 @@
+// ============================================================
+// middleware/error.middleware.js – Global Error Handler
+// Catches all errors passed via next(err) in controllers
+// ============================================================
+
+const errorHandler = (err, req, res, next) => {
+  let statusCode = err.statusCode || 500;
+  let message    = err.message    || 'Internal Server Error';
+
+  // Mongoose: duplicate key (e.g. duplicate email)
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue)[0];
+    message = `${field} already exists.`;
+    statusCode = 400;
+  }
+
+  // Mongoose: validation error
+  if (err.name === 'ValidationError') {
+    message = Object.values(err.errors).map(e => e.message).join(', ');
+    statusCode = 400;
+  }
+
+  // JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    message = 'Invalid token.';
+    statusCode = 401;
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    message,
+    // Only show stack trace in development
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+};
+
+module.exports = errorHandler;

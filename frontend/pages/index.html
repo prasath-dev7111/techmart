@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — Sign In / Register</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    :root{--neon-purple:#a855f7;--neon-blue:#3b82f6;--glow-purple:0 0 30px rgba(168,85,247,0.4)}
+    [data-theme="light"]{--bg-base:#f0f2f8;--bg-surface:#fff;--bg-elevated:#eef0fb;--text-primary:#1a1d2e;--text-secondary:#4a5568;--text-muted:#9ca3af;--border:rgba(168,85,247,0.2);--border-accent:rgba(168,85,247,0.4)}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg-base);font-family:'Rajdhani',sans-serif;position:relative;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(168,85,247,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.05) 1px,transparent 1px);background-size:50px 50px;pointer-events:none}
+    body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 60% at 20% 50%,rgba(168,85,247,0.08),transparent 60%),radial-gradient(ellipse 50% 40% at 80% 30%,rgba(59,130,246,0.06),transparent 60%);pointer-events:none}
+    .auth-wrap{position:relative;z-index:1;width:100%;max-width:490px;padding:16px}
+    .auth-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:24px;padding:40px;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:fadeInUp .5s ease}
+    [data-theme="light"] .auth-card{box-shadow:0 20px 60px rgba(168,85,247,0.08)}
+    .auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center}
+    .logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff}
+    .logo-text{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg-elevated);border-radius:12px;padding:4px;margin-bottom:28px;border:1px solid var(--border)}
+    .auth-tab{padding:10px;text-align:center;border-radius:9px;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .25s;border:none;background:transparent;color:var(--text-secondary);font-family:'Rajdhani',sans-serif;letter-spacing:.04em}
+    .auth-tab.active{background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));color:#fff;box-shadow:0 4px 14px rgba(168,85,247,0.4)}
+    .role-select{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+    .role-card{border:2px solid var(--border);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .25s;background:var(--bg-elevated);position:relative;overflow:hidden}
+    .role-card:hover{border-color:var(--neon-purple);transform:translateY(-2px)}
+    .role-card.selected{border-color:var(--neon-purple);background:rgba(168,85,247,0.08);box-shadow:0 0 0 1px var(--neon-purple),var(--glow-purple)}
+    .role-card.selected::after{content:'\F0E2';font-family:'remixicon';position:absolute;top:8px;right:10px;font-size:.85rem;color:var(--neon-purple);font-style:normal}
+    .role-icon{width:44px;height:44px;border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+    .role-user .role-icon{background:rgba(59,130,246,0.15);color:var(--neon-blue)}
+    .role-admin .role-icon{background:rgba(168,85,247,0.15);color:var(--neon-purple)}
+    .role-card-name{font-weight:700;font-size:.9rem;margin-bottom:3px}
+    .role-card-desc{font-size:.72rem;color:var(--text-muted)}
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-weight:600;font-size:.82rem;color:var(--text-secondary);margin-bottom:7px;letter-spacing:.04em}
+    .form-control{width:100%;padding:11px 15px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:.95rem;font-family:'Rajdhani',sans-serif;outline:none;transition:border .2s,box-shadow .2s}
+    .form-control:focus{border-color:var(--neon-purple);box-shadow:0 0 0 3px rgba(168,85,247,0.12)}
+    .form-control::placeholder{color:var(--text-muted)}
+    .input-wrap{position:relative}
+    .input-wrap .form-control{padding-right:44px}
+    .eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer;transition:color .2s;padding:4px}
+    .eye-btn:hover{color:var(--neon-purple)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn-auth{width:100%;padding:13px;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;letter-spacing:.06em;text-transform:uppercase;transition:all .3s;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+    .btn-auth:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(168,85,247,0.45)}
+    .btn-auth:disabled{opacity:.6;transform:none;cursor:not-allowed}
+    .demo-box{background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:10px;padding:11px 14px;font-size:.8rem;color:#a78bfa;margin-bottom:18px;line-height:1.6}
+    .demo-box span{color:var(--text-muted)}
+    .err-msg{color:#ef4444;font-size:.82rem;margin-top:10px;display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px}
+    .success-msg{color:#10b981;font-size:.82rem;margin-top:10px;display:none;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 14px}
+    .auth-footer-link{text-align:center;font-size:.875rem;color:var(--text-muted);margin-top:18px}
+    .auth-footer-link a{color:var(--neon-purple);font-weight:700;text-decoration:none}
+    .auth-footer-link a:hover{text-decoration:underline}
+    .theme-btn{position:fixed;top:20px;right:20px;z-index:100;width:42px;height:42px;border-radius:12px;background:var(--bg-surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text-secondary);cursor:pointer;transition:all .2s}
+    .theme-btn:hover{border-color:var(--neon-purple);color:var(--neon-purple)}
+    .pw-strength{margin-top:7px;height:4px;background:var(--bg-elevated);border-radius:4px;overflow:hidden}
+    .pw-strength-bar{height:100%;width:0%;border-radius:4px;transition:width .3s,background .3s}
+    .pw-strength-label{font-size:.7rem;color:var(--text-muted);margin-top:3px}
+    .auth-panel{display:none}
+    .auth-panel.active{display:block}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:480px){.auth-card{padding:26px 18px}.form-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<button class="theme-btn" onclick="toggleTheme()"><i class="ri-sun-line" id="theme-icon"></i></button>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <div class="logo-icon"><i class="ri-gamepad-line"></i></div>
+      <div class="logo-text">TechMart</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login',this)">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('signup',this)">Sign Up</button>
+    </div>
+
+    <!-- ═════ LOGIN ═════ -->
+    <div class="auth-panel active" id="panel-login">
+      <div class="role-select">
+        <div class="role-card role-user selected" onclick="selectRole('login','user',this)">
+          <div class="role-icon"><i class="ri-user-line"></i></div>
+          <div class="role-card-name">User</div>
+          <div class="role-card-desc">Shop & browse</div>
+        </div>
+        <div class="role-card role-admin" onclick="selectRole('login','admin',this)">
+          <div class="role-icon"><i class="ri-shield-star-line"></i></div>
+          <div class="role-card-name">Admin</div>
+          <div class="role-card-desc">Manage store</div>
+        </div>
+      </div>
+      <div class="demo-box" id="login-demo">
+        <i class="ri-key-2-line"></i> Demo user: <span>user@techmart.com</span> / <span>User@123</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" id="login-email" class="form-control" value="user@techmart.com" placeholder="email@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrap">
+          <input type="password" id="login-password" class="form-control" value="User@123" placeholder="••••••••"/>
+          <button class="eye-btn" onclick="toggleEye('login-password','eye-login')"><i class="ri-eye-off-line" id="eye-login"></i></button>
+        </div>
+      </div>
+      <button class="btn-auth" onclick="handleLogin()" id="login-btn"><i class="ri-login-circle-line"></i> Sign In</button>
+      <div class="err-msg" id="login-err"></div>
+    </div>
+
+    <!-- ═════ SIGNUP ═════ -->
+    <div class="auth-panel" id="panel-signup">
+      <div style="margin-bottom:14px">
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">Choose Account Type</div>
+        <div style="font-size:.78rem;color:var(--text-muted)">Select your role to get started</div>
+      </div>
+      <div class="role-select">
+        <div class="role-card role-user selected" onclick="selectRole('signup','user',this)">
+          <div class="role-icon"><i class="ri-user-line"></i></div>
+          <div class="role-card-name">User</div>
+          <div class="role-card-desc">Shop gaming gear</div>
+        </div>
+        <div class="role-card role-admin" onclick="selectRole('signup','admin',this)">
+          <div class="role-icon"><i class="ri-shield-star-line"></i></div>
+          <div class="role-card-name">Admin</div>
+          <div class="role-card-desc">Manage products</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" id="su-first" class="form-control" placeholder="John"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" id="su-last" class="form-control" placeholder="Doe"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" id="su-email" class="form-control" placeholder="john@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrap">
+          <input type="password" id="su-password" class="form-control" placeholder="Min. 8 characters" oninput="checkStrength(this.value)"/>
+          <button class="eye-btn" onclick="toggleEye('su-password','eye-su')"><i class="ri-eye-off-line" id="eye-su"></i></button>
+        </div>
+        <div class="pw-strength"><div class="pw-strength-bar" id="pw-bar"></div></div>
+        <div class="pw-strength-label" id="pw-label"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <div class="input-wrap">
+          <input type="password" id="su-confirm" class="form-control" placeholder="Re-enter password"/>
+          <button class="eye-btn" onclick="toggleEye('su-confirm','eye-cf')"><i class="ri-eye-off-line" id="eye-cf"></i></button>
+        </div>
+      </div>
+      <button class="btn-auth" onclick="handleSignup()" id="signup-btn"><i class="ri-user-add-line"></i> Create Account</button>
+      <div class="err-msg" id="signup-err"></div>
+      <div class="success-msg" id="signup-ok"></div>
+    </div>
+
+    <div class="auth-footer-link">
+      <a href="landing.html"><i class="ri-arrow-left-line"></i> Back to Store</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px"></div>
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let loginRole = 'user';
+  let signupRole = 'user';
+
+  const DEMOS = {
+    user:  {email:'user@techmart.com', pw:'User@123',   label:'Demo user'},
+    admin: {email:'admin@techmart.com',pw:'Admin@123', label:'Demo admin'}
+  };
+
+  function selectRole(panel, role, card) {
+    const container = document.getElementById(`panel-${panel}`).querySelectorAll('.role-card');
+    container.forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    if (panel === 'login') {
+      loginRole = role;
+      const d = DEMOS[role];
+      document.getElementById('login-email').value = d.email;
+      document.getElementById('login-password').value = d.pw;
+      document.getElementById('login-demo').innerHTML = `<i class="ri-key-2-line"></i> ${d.label}: <span>${d.email}</span> / <span>${d.pw}</span>`;
+    } else {
+      signupRole = role;
+    }
+  }
+
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`panel-${tab}`).classList.add('active');
+  }
+
+  function toggleEye(inp, icon) {
+    const i = document.getElementById(inp), ic = document.getElementById(icon);
+    if (i.type==='password'){i.type='text';ic.className='ri-eye-line';}
+    else{i.type='password';ic.className='ri-eye-off-line';}
+  }
+
+  function checkStrength(pw) {
+    const bar=document.getElementById('pw-bar'), lbl=document.getElementById('pw-label');
+    if(!pw){bar.style.width='0';lbl.textContent='';return;}
+    let s=0;
+    if(pw.length>=8)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
+    const c=['#ef4444','#f59e0b','#3b82f6','#10b981'];
+    const l=['Weak','Fair','Good','Strong'];
+    const w=['25%','50%','75%','100%'];
+    const i=Math.max(0,s-1);
+    bar.style.width=w[i];bar.style.background=c[i];
+    lbl.textContent=l[i];lbl.style.color=c[i];
+  }
+
+  function setErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';}
+  function clearMsg(id){document.getElementById(id).style.display='none';}
+
+  async function handleLogin() {
+    const email=document.getElementById('login-email').value.trim();
+    const password=document.getElementById('login-password').value;
+    const btn=document.getElementById('login-btn');
+    clearMsg('login-err');
+    if(!email||!password) return setErr('login-err','Please fill all fields.');
+    btn.disabled=true;btn.innerHTML='<i class="ri-loader-4-line"></i> Signing in...';
+    try {
+      const res = await Auth.login({email, password});
+      saveSession(res.token, res.user);
+      // Role-based redirect: use ACTUAL role from DB, not UI selection
+      const dbRole = res.user?.role || 'user';
+      if (['admin','manager','staff'].includes(dbRole)) {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'landing.html';
+      }
+    } catch(err) {
+      setErr('login-err', err.message || 'Login failed. Check credentials.');
+      btn.disabled=false;btn.innerHTML='<i class="ri-login-circle-line"></i> Sign In';
+    }
+  }
+
+  async function handleSignup() {
+    const first=document.getElementById('su-first').value.trim();
+    const last=document.getElementById('su-last').value.trim();
+    const email=document.getElementById('su-email').value.trim();
+    const pw=document.getElementById('su-password').value;
+    const cf=document.getElementById('su-confirm').value;
+    const btn=document.getElementById('signup-btn');
+    clearMsg('signup-err'); clearMsg('signup-ok');
+    if(!first||!last) return setErr('signup-err','Enter your full name.');
+    if(!email||!email.includes('@')) return setErr('signup-err','Enter a valid email.');
+    if(pw.length<8) return setErr('signup-err','Password must be 8+ characters.');
+    if(pw!==cf) return setErr('signup-err','Passwords do not match.');
+    btn.disabled=true;btn.innerHTML='<i class="ri-loader-4-line"></i> Creating account...';
+    try {
+      const res = await Auth.register({name:`${first} ${last}`,email,password:pw,role:signupRole});
+      saveSession(res.token, res.user);
+      const ok=document.getElementById('signup-ok');
+      ok.textContent=`Account created! Redirecting...`;ok.style.display='block';
+      setTimeout(()=>{
+        const r = res.user?.role || 'user';
+        window.location.href = ['admin','manager','staff'].includes(r) ? 'dashboard.html' : 'landing.html';
+      }, 900);
+    } catch(err) {
+      setErr('signup-err', err.message||'Registration failed.');
+      btn.disabled=false;btn.innerHTML='<i class="ri-user-add-line"></i> Create Account';
+    }
+  }
+
+  function toggleTheme() {
+    const html=document.documentElement, icon=document.getElementById('theme-icon');
+    if(html.dataset.theme==='dark'){html.dataset.theme='light';icon.className='ri-moon-line';localStorage.setItem('tm_theme','light');}
+    else{html.dataset.theme='dark';icon.className='ri-sun-line';localStorage.setItem('tm_theme','dark');}
+  }
+
+  (function init(){
+    const t=localStorage.getItem('tm_theme')||'dark';
+    document.documentElement.dataset.theme=t;
+    document.getElementById('theme-icon').className=t==='dark'?'ri-sun-line':'ri-moon-line';
+    const user=getUser(),token=getToken();
+    if(token&&user) window.location.href=user.role==='admin'?'dashboard.html':'landing.html';
+  })();
+
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    const active=document.querySelector('.auth-panel.active');
+    if(active?.id==='panel-login') handleLogin(); else handleSignup();
+  });
+</script>
+</body>
+</html>

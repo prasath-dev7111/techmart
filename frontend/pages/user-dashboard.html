@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — My Account</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    :root{--neon-purple:#a855f7;--neon-blue:#3b82f6;--neon-green:#10b981}
+    [data-theme="light"]{--bg-base:#f0f2f8;--bg-surface:#fff;--bg-elevated:#eef0fb;--text-primary:#1a1d2e;--text-secondary:#4a5568;--text-muted:#9ca3af;--border:rgba(168,85,247,0.15)}
+    body{font-family:'Rajdhani',sans-serif;background:var(--bg-base);color:var(--text-primary);min-height:100vh;transition:background .3s,color .3s}
+
+    /* ── TOP NAV ── */
+    .user-nav{position:sticky;top:0;z-index:100;background:var(--bg-surface);border-bottom:1px solid var(--border);backdrop-filter:blur(10px)}
+    .user-nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
+    .nav-logo{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:800;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:flex;align-items:center;gap:10px;text-decoration:none}
+    .nav-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff}
+    .nav-right{display:flex;align-items:center;gap:12px}
+    .nav-btn{padding:8px 16px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all .2s;text-decoration:none}
+    .nav-btn:hover{border-color:var(--neon-purple);color:var(--neon-purple)}
+    .nav-btn.primary{background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));border-color:transparent;color:#fff}
+    .nav-btn.primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(168,85,247,0.4)}
+    .theme-icon-btn{width:36px;height:36px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--text-secondary);cursor:pointer;transition:all .2s}
+    .theme-icon-btn:hover{border-color:var(--neon-purple);color:var(--neon-purple)}
+
+    /* ── LAYOUT ── */
+    .page-wrap{max-width:1200px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
+    
+    /* ── SIDEBAR ── */
+    .user-sidebar{background:var(--bg-surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;position:sticky;top:88px}
+    .user-profile-block{padding:28px;text-align:center;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(59,130,246,0.04))}
+    .user-avatar-lg{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:#fff;margin:0 auto 12px;font-family:'Orbitron',monospace}
+    .user-display-name{font-family:'Orbitron',monospace;font-weight:700;font-size:1rem;margin-bottom:4px}
+    .user-role-badge{display:inline-block;padding:3px 12px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-size:.72rem;color:var(--neon-purple);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+    .sidebar-nav{padding:12px}
+    .s-nav-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:10px;color:var(--text-secondary);font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;border:none;background:none;width:100%;text-align:left;font-family:'Rajdhani',sans-serif}
+    .s-nav-item:hover{background:rgba(168,85,247,0.08);color:var(--text-primary)}
+    .s-nav-item.active{background:rgba(168,85,247,0.12);color:var(--neon-purple);border-left:3px solid var(--neon-purple)}
+    .s-nav-item i{font-size:1.1rem;width:20px}
+
+    /* ── MAIN CONTENT ── */
+    .user-main{}
+    .user-section{display:none}
+    .user-section.active{display:block}
+    .section-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:20px}
+    .section-heading{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .section-heading i{color:var(--neon-purple)}
+
+    /* ── STATS ── */
+    .user-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+    .user-stat{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;transition:all .3s}
+    .user-stat:hover{border-color:rgba(168,85,247,0.3);transform:translateY(-2px)}
+    .stat-icon{width:48px;height:48px;border-radius:12px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+    .stat-num{font-family:'Orbitron',monospace;font-size:1.6rem;font-weight:800;margin-bottom:4px}
+    .stat-lbl{font-size:.8rem;color:var(--text-muted)}
+
+    /* ── ORDERS ── */
+    .orders-list{display:flex;flex-direction:column;gap:12px}
+    .order-item{background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;transition:all .2s}
+    .order-item:hover{border-color:rgba(168,85,247,0.3)}
+    .order-id{font-family:'Orbitron',monospace;font-size:.85rem;font-weight:700;color:var(--neon-purple)}
+    .order-date{font-size:.78rem;color:var(--text-muted);margin-top:2px}
+    .order-items-count{font-size:.82rem;color:var(--text-secondary);margin-top:4px}
+    .order-amount{font-family:'Orbitron',monospace;font-weight:700;font-size:1rem}
+    .order-status{padding:4px 12px;border-radius:50px;font-size:.72rem;font-weight:700;letter-spacing:.05em}
+    .status-delivered{background:rgba(16,185,129,0.12);color:var(--neon-green);border:1px solid rgba(16,185,129,0.25)}
+    .status-processing{background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25)}
+    .status-shipped{background:rgba(59,130,246,0.12);color:var(--neon-blue);border:1px solid rgba(59,130,246,0.25)}
+    .status-placed{background:rgba(168,85,247,0.12);color:var(--neon-purple);border:1px solid rgba(168,85,247,0.25)}
+
+    /* ── WISHLIST ── */
+    .wishlist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .wish-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;gap:12px;align-items:center;transition:all .2s}
+    .wish-card:hover{border-color:rgba(168,85,247,0.3)}
+    .wish-img{width:60px;height:60px;border-radius:10px;object-fit:contain;background:var(--bg-surface);padding:6px;flex-shrink:0}
+    .wish-name{font-weight:700;font-size:.88rem;margin-bottom:4px;line-height:1.3}
+    .wish-price{font-family:'Orbitron',monospace;font-size:.85rem;color:var(--neon-purple);font-weight:700}
+    .wish-remove{margin-left:auto;width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:.85rem;cursor:pointer;transition:all .2s;flex-shrink:0}
+    .wish-remove:hover{background:rgba(239,68,68,0.2)}
+
+    /* ── PROFILE FORM ── */
+    .profile-form{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .form-group{display:flex;flex-direction:column;gap:6px}
+    .form-group.full{grid-column:1/-1}
+    .form-label{font-size:.82rem;font-weight:600;color:var(--text-secondary);letter-spacing:.04em}
+    .form-control{padding:11px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:.92rem;font-family:'Rajdhani',sans-serif;outline:none;transition:border .2s}
+    .form-control:focus{border-color:var(--neon-purple);box-shadow:0 0 0 3px rgba(168,85,247,0.1)}
+    .btn-save{padding:11px 28px;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));border:none;border-radius:10px;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Rajdhani',sans-serif;transition:all .3s;letter-spacing:.04em}
+    .btn-save:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(168,85,247,0.4)}
+
+    .empty-placeholder{text-align:center;padding:40px 20px;color:var(--text-muted)}
+    .empty-placeholder i{font-size:2.5rem;opacity:.3;display:block;margin-bottom:12px}
+
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .user-section.active{animation:fadeInUp .4s ease}
+
+    @media(max-width:900px){
+      .page-wrap{grid-template-columns:1fr}
+      .user-sidebar{position:static}
+      .user-stats{grid-template-columns:repeat(3,1fr)}
+      .wishlist-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:600px){
+      .user-stats{grid-template-columns:1fr}
+      .profile-form{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="user-nav">
+  <div class="user-nav-inner">
+    <a href="landing.html" class="nav-logo">
+      <div class="nav-logo-icon"><i class="ri-gamepad-line"></i></div>
+      TechMart
+    </a>
+    <div class="nav-right">
+      <button class="theme-icon-btn" onclick="toggleTheme()"><i class="ri-sun-line" id="theme-icon"></i></button>
+      <a href="landing.html" class="nav-btn"><i class="ri-store-2-line"></i> Shop</a>
+      <button class="nav-btn" onclick="doLogout()"><i class="ri-logout-box-r-line"></i> Sign Out</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="page-wrap">
+
+  <!-- Sidebar -->
+  <aside class="user-sidebar">
+    <div class="user-profile-block">
+      <div class="user-avatar-lg" id="u-avatar">U</div>
+      <div class="user-display-name" id="u-name">User</div>
+      <div id="u-email" style="font-size:.78rem;color:var(--text-muted);margin:4px 0 8px">user@techmart.com</div>
+      <span class="user-role-badge">Member</span>
+    </div>
+    <div class="sidebar-nav">
+      <button class="s-nav-item active" onclick="showSection('overview',this)"><i class="ri-home-3-line"></i> Overview</button>
+      <button class="s-nav-item" onclick="showSection('orders',this)"><i class="ri-shopping-bag-line"></i> My Orders</button>
+      <button class="s-nav-item" onclick="showSection('wishlist',this)"><i class="ri-heart-line"></i> Wishlist</button>
+      <button class="s-nav-item" onclick="showSection('profile',this)"><i class="ri-user-settings-line"></i> Profile</button>
+      <button class="s-nav-item" onclick="showSection('security',this)"><i class="ri-shield-keyhole-line"></i> Security</button>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="user-main">
+
+    <!-- OVERVIEW -->
+    <div class="user-section active" id="section-overview">
+      <div class="user-stats">
+        <div class="user-stat">
+          <div class="stat-icon" style="background:rgba(168,85,247,0.1)"><i class="ri-shopping-bag-line" style="color:var(--neon-purple)"></i></div>
+          <div class="stat-num" id="stat-orders">0</div>
+          <div class="stat-lbl">Total Orders</div>
+        </div>
+        <div class="user-stat">
+          <div class="stat-icon" style="background:rgba(16,185,129,0.1)"><i class="ri-heart-line" style="color:var(--neon-green)"></i></div>
+          <div class="stat-num" id="stat-wish">0</div>
+          <div class="stat-lbl">Wishlist Items</div>
+        </div>
+        <div class="user-stat">
+          <div class="stat-icon" style="background:rgba(59,130,246,0.1)"><i class="ri-star-line" style="color:var(--neon-blue)"></i></div>
+          <div class="stat-num">4.9</div>
+          <div class="stat-lbl">Avg Rating</div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-heading"><i class="ri-fire-line"></i> Recent Activity</div>
+        <div class="orders-list" id="recent-activity">
+          <div class="empty-placeholder"><i class="ri-time-line"></i>No recent activity yet</div>
+        </div>
+      </div>
+      <div class="section-card" style="background:linear-gradient(135deg,rgba(168,85,247,0.1),rgba(59,130,246,0.06));border-color:rgba(168,85,247,0.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+          <div>
+            <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:1.1rem;margin-bottom:6px">Explore Our Gaming Collection</div>
+            <div style="color:var(--text-secondary);font-size:.9rem">Discover the latest gear and accessories at unbeatable prices</div>
+          </div>
+          <a href="landing.html#featured" class="nav-btn primary"><i class="ri-shopping-bag-3-line"></i> Browse All</a>
+        </div>
+      </div>
+
+      <!-- Featured Products from Admin -->
+      <div class="section-card" style="padding:0">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem">
+            <i class="ri-star-line" style="color:var(--neon-purple)"></i> Featured Products
+          </div>
+          <a href="landing.html" style="font-size:.8rem;color:var(--neon-blue);text-decoration:none">View all →</a>
+        </div>
+        <div id="dash-featured-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:var(--border)">
+          <div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text-muted);background:var(--bg-elevated)">
+            <i class="ri-loader-4-line" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>
+            Loading products...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="user-section" id="section-orders">
+      <div class="section-card">
+        <div class="section-heading"><i class="ri-shopping-bag-line"></i> My Orders</div>
+        <div class="orders-list" id="orders-list">
+          <div class="empty-placeholder"><i class="ri-shopping-bag-line"></i>No orders yet. Start shopping!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WISHLIST -->
+    <div class="user-section" id="section-wishlist">
+      <div class="section-card">
+        <div class="section-heading"><i class="ri-heart-line"></i> My Wishlist</div>
+        <div class="wishlist-grid" id="wishlist-grid">
+          <div class="empty-placeholder" style="grid-column:1/-1"><i class="ri-heart-line"></i>No items in wishlist yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="user-section" id="section-profile">
+      <div class="section-card">
+        <div class="section-heading"><i class="ri-user-settings-line"></i> Edit Profile</div>
+        <div class="profile-form">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="pf-name" placeholder="Your name"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="pf-email" placeholder="email@example.com"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" id="pf-phone" placeholder="+91 98765 43210"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" class="form-control" id="pf-city" placeholder="Chennai"/>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Address</label>
+            <input type="text" class="form-control" id="pf-address" placeholder="Street, Area"/>
+          </div>
+        </div>
+        <div style="margin-top:20px">
+          <button class="btn-save" onclick="saveProfile()"><i class="ri-save-line"></i> Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="user-section" id="section-security">
+      <div class="section-card">
+        <div class="section-heading"><i class="ri-shield-keyhole-line"></i> Security Settings</div>
+        <div class="profile-form">
+          <div class="form-group full">
+            <label class="form-label">Current Password</label>
+            <input type="password" class="form-control" placeholder="••••••••"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" class="form-control" placeholder="Min. 8 characters"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" class="form-control" placeholder="Re-enter password"/>
+          </div>
+        </div>
+        <div style="margin-top:20px">
+          <button class="btn-save" onclick="showToast('Password updated successfully!','success')"><i class="ri-lock-password-line"></i> Update Password</button>
+        </div>
+      </div>
+      <div class="section-card" style="border-color:rgba(239,68,68,0.2);background:rgba(239,68,68,0.03)">
+        <div class="section-heading" style="color:#ef4444"><i class="ri-alarm-warning-line"></i> Danger Zone</div>
+        <p style="color:var(--text-secondary);font-size:.9rem;margin-bottom:16px">Once you sign out, you'll need to log in again to access your account.</p>
+        <button onclick="doLogout()" style="padding:10px 20px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;color:#ef4444;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:8px;transition:all .2s">
+          <i class="ri-logout-box-r-line"></i> Sign Out
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /user-main -->
+</div><!-- /page-wrap -->
+
+<div id="toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px"></div>
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+  <script>
+    if (!requireUser()) { throw new Error("not user"); }
+    populateUserBadge();
+  </script>
+<script>
+  // ── Sample data for demo ──
+  const SAMPLE_ORDERS = [
+    {id:'TM-20250001',date:'Apr 20, 2025',items:2,amount:'₹7,499',status:'Delivered'},
+    {id:'TM-20250002',date:'Apr 23, 2025',items:1,amount:'₹1,290',status:'Shipped'},
+    {id:'TM-20250003',date:'Apr 25, 2025',items:3,amount:'₹14,899',status:'Processing'},
+  ];
+
+  const SAMPLE_WISHLIST = [
+    {id:1,name:'Razer DeathAdder V3 Pro',price:'₹4,199',img:'https://images.unsplash.com/photo-1527814050087-3793815479db?w=200&auto=format&fit=crop&q=60'},
+    {id:2,name:'Corsair K100 RGB Keyboard',price:'₹12,999',img:'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=200&auto=format&fit=crop&q=60'},
+    {id:3,name:'HyperX Cloud Alpha',price:'₹7,999',img:'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=200&auto=format&fit=crop&q=60'},
+  ];
+
+  function showSection(id, btn) {
+    document.querySelectorAll('.user-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.s-nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById(`section-${id}`).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function renderOrders(list) {
+    const statusClass = {Delivered:'status-delivered',Shipped:'status-shipped',Processing:'status-processing',Placed:'status-placed'};
+    if (!list.length) return '<div class="empty-placeholder"><i class="ri-shopping-bag-line"></i>No orders yet. Start shopping!</div>';
+    return list.map(o => `
+      <div class="order-item">
+        <div>
+          <div class="order-id">${o.id}</div>
+          <div class="order-date">${o.date}</div>
+          <div class="order-items-count">${o.items} item${o.items>1?'s':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="order-amount">${o.amount}</div>
+          <div style="margin-top:6px"><span class="order-status ${statusClass[o.status]||'status-placed'}">${o.status}</span></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderWishlist() {
+    const saved = JSON.parse(localStorage.getItem('tm_wishlist') || '[]');
+    const grid = document.getElementById('wishlist-grid');
+    const display = SAMPLE_WISHLIST.filter(w => saved.length === 0 || true); // show sample
+    if (!display.length) {
+      grid.innerHTML = '<div class="empty-placeholder" style="grid-column:1/-1"><i class="ri-heart-line"></i>No items in wishlist yet</div>';
+      return;
+    }
+    grid.innerHTML = display.map(w => `
+      <div class="wish-card">
+        <img src="${w.img}" alt="${w.name}" class="wish-img"/>
+        <div style="flex:1">
+          <div class="wish-name">${w.name}</div>
+          <div class="wish-price">${w.price}</div>
+        </div>
+        <button class="wish-remove" onclick="this.closest('.wish-card').remove();showToast('Removed from wishlist','info')"><i class="ri-delete-bin-line"></i></button>
+      </div>
+    `).join('');
+    document.getElementById('stat-wish').textContent = display.length;
+  }
+
+  function saveProfile() {
+    showToast('Profile updated successfully!','success');
+  }
+
+  function doLogout() {
+    clearSession();
+    window.location.href = 'index.html';
+  }
+
+  function toggleTheme() {
+    const html = document.documentElement, icon = document.getElementById('theme-icon');
+    if (!html.dataset.theme || html.dataset.theme === 'dark') {
+      html.dataset.theme = 'light'; icon.className = 'ri-moon-line'; localStorage.setItem('tm_theme','light');
+    } else {
+      html.dataset.theme = 'dark'; icon.className = 'ri-sun-line'; localStorage.setItem('tm_theme','dark');
+    }
+  }
+
+  function showToast(msg, type='info') {
+    const c = document.getElementById('toast-container');
+    const colors = {success:'#10b981',error:'#ef4444',info:'#a855f7'};
+    const icons = {success:'ri-checkbox-circle-fill',error:'ri-error-warning-fill',info:'ri-information-fill'};
+    const t = document.createElement('div');
+    t.style.cssText = `background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:.875rem;box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:slideIn .3s ease;max-width:300px;font-family:'Rajdhani',sans-serif`;
+    t.innerHTML = `<i class="${icons[type]}" style="color:${colors[type]};font-size:1.1rem"></i><span>${msg}</span>`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  // ── Init ──
+  (function init() {
+    // Apply theme
+    const t = localStorage.getItem('tm_theme') || 'dark';
+    document.documentElement.dataset.theme = t;
+    document.getElementById('theme-icon').className = t === 'dark' ? 'ri-sun-line' : 'ri-moon-line';
+
+    // Auth guard — only require login, not admin role
+    const token = getToken(), user = getUser();
+    if (!token || !user) { window.location.href = 'index.html'; return; }
+    if (user.role === 'admin') { window.location.href = 'dashboard.html'; return; }
+
+    // Populate user info
+    const avatar = document.getElementById('u-avatar');
+    const name = document.getElementById('u-name');
+    const email = document.getElementById('u-email');
+    if (avatar) avatar.textContent = user.name?.charAt(0).toUpperCase() || 'U';
+    if (name) name.textContent = user.name || 'User';
+    if (email) email.textContent = user.email || '';
+
+    // Pre-fill profile
+    const pname = document.getElementById('pf-name');
+    const pemail = document.getElementById('pf-email');
+    if (pname) pname.value = user.name || '';
+    if (pemail) pemail.value = user.email || '';
+
+    // Render data
+    const ordersEl = document.getElementById('orders-list');
+    const actEl = document.getElementById('recent-activity');
+    if (ordersEl) ordersEl.innerHTML = renderOrders(SAMPLE_ORDERS);
+    if (actEl) actEl.innerHTML = renderOrders(SAMPLE_ORDERS.slice(0,2));
+    document.getElementById('stat-orders').textContent = SAMPLE_ORDERS.length;
+
+    renderWishlist();
+  })();
+
+  /* ── Load featured products from backend (from admin) ── */
+  async function loadFeaturedProducts() {
+    const grid = document.getElementById('dash-featured-grid');
+    if (!grid) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/products?isFeatured=true&limit=8&isActive=true');
+      const data = await res.json();
+      if (!data.success || !data.data?.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--text-muted);background:var(--bg-elevated)">No featured products yet.</div>';
+        return;
+      }
+      grid.innerHTML = data.data.map(p => {
+        const disc = p.comparePrice > p.price ? Math.round((1 - p.price/p.comparePrice)*100) : 0;
+        const oos  = p.stock === 0;
+        return `
+          <div style="background:var(--bg-elevated);padding:20px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:background .2s" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--bg-elevated)'">
+            <div style="position:relative">
+              <img src="${p.image||'https://images.unsplash.com/photo-1518770660439-4636190af475?w=300'}" 
+                   style="width:100%;height:120px;object-fit:contain;border-radius:8px;background:var(--bg-surface);padding:8px" 
+                   alt="${p.name}" onerror="this.src='https://images.unsplash.com/photo-1518770660439-4636190af475?w=300'"/>
+              ${disc > 0 ? `<span style="position:absolute;top:6px;left:6px;background:linear-gradient(135deg,var(--neon-purple),var(--neon-blue));color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:50px">-${disc}%</span>` : ''}
+              ${oos ? '<span style="position:absolute;top:6px;right:6px;background:#ef4444;color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:50px">OUT</span>' : ''}
+            </div>
+            <div>
+              <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:3px">${p.brand||p.category?.name||''}</div>
+              <div style="font-weight:700;font-size:.88rem;color:var(--text-primary);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.name}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-family:'Orbitron',monospace;font-size:.9rem;color:var(--neon-purple);font-weight:800">₹${p.price.toLocaleString('en-IN')}</span>
+                ${p.comparePrice > p.price ? `<span style="font-size:.75rem;color:var(--text-muted);text-decoration:line-through">₹${p.comparePrice.toLocaleString('en-IN')}</span>` : ''}
+              </div>
+              <div style="font-size:.72rem;color:${p.stock===0?'#ef4444':p.stock<=10?'#f59e0b':'#10b981'};margin-top:4px">
+                ${p.stock===0?'Out of stock':p.stock<=10?'Only '+p.stock+' left':'In stock'}
+              </div>
+            </div>
+            <a href="landing.html" style="display:block;padding:8px;text-align:center;
+              background:${oos?'var(--bg-surface)':'linear-gradient(135deg,var(--neon-purple),var(--neon-blue))'};
+              color:${oos?'var(--text-muted)':'#fff'};border-radius:8px;font-size:.8rem;font-weight:700;
+              text-decoration:none;transition:opacity .2s;${oos?'pointer-events:none':''}">
+              ${oos?'Out of Stock':'Shop Now →'}
+            </a>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--text-muted);background:var(--bg-elevated)">Could not load products. <a href="landing.html" style="color:var(--neon-blue)">Browse all →</a></div>';
+    }
+  }
+  loadFeaturedProducts();
+</script>
+</body>
+</html>

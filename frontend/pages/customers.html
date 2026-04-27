@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — Customers</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/sidebar.css"/>
+  <style>
+    .customer-avatar {
+      width:38px;height:38px;border-radius:50%;
+      background:linear-gradient(135deg, var(--accent), #8b5cf6);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:.9rem;color:#fff;flex-shrink:0;
+    }
+    .form-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="main-content">
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Customers</h1>
+          <p class="subtitle">View and manage your customer base</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <i class="ri-user-add-line"></i> Add Customer
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-toolbar">
+          <div class="search-bar">
+            <i class="ri-search-line"></i>
+            <input type="text" id="search" placeholder="Search customers..." oninput="debounceSearch()"/>
+          </div>
+          <span id="cust-count" style="font-size:.875rem;color:var(--text-secondary)"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>City</th>
+              <th>Total Orders</th>
+              <th>Total Spent</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="customers-body">
+            <tr><td colspan="7"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span id="page-info"></span>
+          <div class="pagination-btns" id="page-btns"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="cust-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Customer</h3>
+      <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" id="c-name" class="form-control" placeholder="John Doe"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" id="c-email" class="form-control" placeholder="john@example.com"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input type="text" id="c-phone" class="form-control" placeholder="+91 9876543210"/>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-size:.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:12px;margin-top:4px">Shipping Address</div>
+      <div class="form-group">
+        <label class="form-label">Street</label>
+        <input type="text" id="c-street" class="form-control" placeholder="123 Main St"/>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" id="c-city" class="form-control" placeholder="Mumbai"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <input type="text" id="c-state" class="form-control" placeholder="Maharashtra"/>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">ZIP Code</label>
+          <input type="text" id="c-zip" class="form-control" placeholder="400001"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input type="text" id="c-country" class="form-control" value="India"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">
+        <i class="ri-save-line"></i> Save Customer
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+  <script>
+    if (!requireAdmin()) { throw new Error("not admin"); }
+    populateUserBadge();
+    markActiveNav();
+  </script>
+<script src="../js/sidebar.js"></script>
+<script>
+  initPage('Customers');
+
+  let searchTimer;
+  let currentPage = 1;
+
+  async function loadCustomers(page = 1) {
+    currentPage = page;
+    const search = document.getElementById('search').value.trim();
+    const params = new URLSearchParams({ page, limit: 15 });
+    if (search) params.set('search', search);
+
+    document.getElementById('customers-body').innerHTML = `<tr><td colspan="7"><div class="spinner"></div></td></tr>`;
+
+    try {
+      const { data, total } = await Customers.getAll(params.toString());
+      document.getElementById('cust-count').textContent = `${total} customers`;
+      document.getElementById('page-info').textContent = `Showing ${data.length} of ${total}`;
+
+      if (!data.length) {
+        document.getElementById('customers-body').innerHTML = `
+          <tr><td colspan="7"><div class="empty-state"><i class="ri-group-line"></i><p>No customers found</p></div></td></tr>`;
+        return;
+      }
+
+      document.getElementById('customers-body').innerHTML = data.map(c => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="customer-avatar">${c.name.charAt(0).toUpperCase()}</div>
+              <span style="font-weight:500;color:var(--text-primary)">${c.name}</span>
+            </div>
+          </td>
+          <td>${c.email}</td>
+          <td>${c.phone || '—'}</td>
+          <td>${c.address?.city || '—'}</td>
+          <td>${c.totalOrders}</td>
+          <td class="primary">${formatCurrency(c.totalSpent)}</td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${c._id}')" title="Edit">
+                <i class="ri-edit-line"></i>
+              </button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="deleteCustomer('${c._id}')" title="Remove">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </td>
+        </tr>`).join('');
+
+      const totalPages = Math.ceil(total / 15);
+      let btns = '';
+      for (let i = 1; i <= totalPages; i++) {
+        btns += `<button class="page-btn ${i===page?'active':''}" onclick="loadCustomers(${i})">${i}</button>`;
+      }
+      document.getElementById('page-btns').innerHTML = btns;
+
+    } catch (err) { showToast('Failed to load customers: ' + err.message, 'error'); }
+  }
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadCustomers(1), 400);
+  }
+
+  function openAddModal() {
+    document.getElementById('modal-title').textContent = 'Add Customer';
+    document.getElementById('edit-id').value = '';
+    ['c-name','c-email','c-phone','c-street','c-city','c-state','c-zip'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('c-country').value = 'India';
+    document.getElementById('cust-modal').classList.add('open');
+  }
+
+  async function openEditModal(id) {
+    try {
+      const { data: c } = await Customers.getOne(id);
+      document.getElementById('modal-title').textContent = 'Edit Customer';
+      document.getElementById('edit-id').value = c._id;
+      document.getElementById('c-name').value   = c.name;
+      document.getElementById('c-email').value  = c.email;
+      document.getElementById('c-phone').value  = c.phone || '';
+      document.getElementById('c-street').value = c.address?.street || '';
+      document.getElementById('c-city').value   = c.address?.city || '';
+      document.getElementById('c-state').value  = c.address?.state || '';
+      document.getElementById('c-zip').value    = c.address?.zip || '';
+      document.getElementById('c-country').value= c.address?.country || 'India';
+      document.getElementById('cust-modal').classList.add('open');
+    } catch { showToast('Failed to load customer', 'error'); }
+  }
+
+  function closeModal() { document.getElementById('cust-modal').classList.remove('open'); }
+
+  async function saveCustomer() {
+    const id   = document.getElementById('edit-id').value;
+    const body = {
+      name:  document.getElementById('c-name').value.trim(),
+      email: document.getElementById('c-email').value.trim(),
+      phone: document.getElementById('c-phone').value.trim(),
+      address: {
+        street:  document.getElementById('c-street').value.trim(),
+        city:    document.getElementById('c-city').value.trim(),
+        state:   document.getElementById('c-state').value.trim(),
+        zip:     document.getElementById('c-zip').value.trim(),
+        country: document.getElementById('c-country').value.trim()
+      }
+    };
+    if (!body.name || !body.email) { showToast('Name and Email are required', 'error'); return; }
+
+    try {
+      if (id) { await Customers.update(id, body); showToast('Customer updated!', 'success'); }
+      else    { await Customers.create(body);     showToast('Customer added!', 'success'); }
+      closeModal();
+      loadCustomers(currentPage);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function deleteCustomer(id) {
+    if (!confirm('Remove this customer?')) return;
+    try {
+      await Customers.delete(id);
+      showToast('Customer removed', 'success');
+      loadCustomers(currentPage);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  loadCustomers();
+</script>
+</body>
+</html>

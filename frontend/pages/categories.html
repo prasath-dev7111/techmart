@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TechMart — Categories</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/sidebar.css"/>
+  <style>
+    .categories-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+    .cat-card {
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:20px;
+      display:flex; flex-direction:column; gap:12px;
+      transition: border-color .2s, transform .2s;
+    }
+    .cat-card:hover { border-color:var(--border-accent); transform:translateY(-2px); }
+    .cat-icon-wrap {
+      width:48px; height:48px; border-radius:var(--radius);
+      background:var(--accent-glow); display:flex;
+      align-items:center; justify-content:center;
+      font-size:1.4rem; color:var(--accent);
+    }
+    .cat-name { font-family:'Syne',sans-serif; font-weight:700; }
+    .cat-desc { font-size:.8rem; color:var(--text-muted); }
+    .cat-actions { display:flex; gap:8px; margin-top:auto; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="main-content">
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Categories</h1>
+          <p class="subtitle">Organise your products into categories</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">
+          <i class="ri-add-line"></i> Add Category
+        </button>
+      </div>
+
+      <div class="categories-grid" id="categories-grid">
+        <div class="spinner"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Category</h3>
+      <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="form-group">
+        <label class="form-label">Category Name *</label>
+        <input type="text" id="c-name" class="form-control" placeholder="e.g. Smartphones"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input type="text" id="c-desc" class="form-control" placeholder="Short description"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Remix Icon Class</label>
+        <input type="text" id="c-icon" class="form-control" placeholder="e.g. ri-smartphone-line"/>
+        <small style="color:var(--text-muted);font-size:.75rem">Browse icons at <a href="https://remixicon.com" target="_blank" style="color:var(--accent)">remixicon.com</a></small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">
+        <i class="ri-save-line"></i> Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+  <script>
+    if (!requireAdmin()) { throw new Error("not admin"); }
+    populateUserBadge();
+    markActiveNav();
+  </script>
+<script src="../js/sidebar.js"></script>
+<script>
+  initPage('Categories');
+
+  async function loadCategories() {
+    try {
+      const { data } = await Categories.getAll();
+      const grid = document.getElementById('categories-grid');
+
+      if (!data.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+          <i class="ri-folder-open-line"></i><p>No categories yet. Add one!</p>
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = data.map(c => `
+        <div class="cat-card">
+          <div class="cat-icon-wrap"><i class="${c.icon || 'ri-folder-line'}"></i></div>
+          <div>
+            <div class="cat-name">${c.name}</div>
+            <div class="cat-desc">${c.description || 'No description'}</div>
+          </div>
+          <div class="cat-actions">
+            <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openEditModal('${c._id}','${c.name}','${c.description||''}','${c.icon||''}')">
+              <i class="ri-edit-line"></i> Edit
+            </button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteCategory('${c._id}')">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+          </div>
+        </div>`).join('');
+    } catch (err) { showToast('Failed to load categories', 'error'); }
+  }
+
+  function openModal() {
+    document.getElementById('modal-title').textContent = 'Add Category';
+    document.getElementById('edit-id').value = '';
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-desc').value = '';
+    document.getElementById('c-icon').value = 'ri-folder-line';
+    document.getElementById('cat-modal').classList.add('open');
+  }
+
+  function openEditModal(id, name, desc, icon) {
+    document.getElementById('modal-title').textContent = 'Edit Category';
+    document.getElementById('edit-id').value = id;
+    document.getElementById('c-name').value = name;
+    document.getElementById('c-desc').value = desc;
+    document.getElementById('c-icon').value = icon;
+    document.getElementById('cat-modal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('cat-modal').classList.remove('open'); }
+
+  async function saveCategory() {
+    const id   = document.getElementById('edit-id').value;
+    const body = {
+      name:        document.getElementById('c-name').value.trim(),
+      description: document.getElementById('c-desc').value.trim(),
+      icon:        document.getElementById('c-icon').value.trim() || 'ri-folder-line'
+    };
+    if (!body.name) { showToast('Category name is required', 'error'); return; }
+
+    try {
+      if (id) { await Categories.update(id, body); showToast('Category updated!', 'success'); }
+      else    { await Categories.create(body);     showToast('Category created!', 'success'); }
+      closeModal();
+      loadCategories();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function deleteCategory(id) {
+    if (!confirm('Delete this category?')) return;
+    try {
+      await Categories.delete(id);
+      showToast('Category removed', 'success');
+      loadCategories();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  loadCategories();
+</script>
+</body>
+</html>
